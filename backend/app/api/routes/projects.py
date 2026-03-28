@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.orm import Session, joinedload
 
 import json
@@ -80,14 +80,23 @@ def _service_monthly_cost(svc: AppService, price: Pricing | None) -> float:
         return od
 
 
-def _build_service_out(svc: AppService, region_id: int, db: Session) -> AppServiceOut:
-    pricing = db.scalars(
+def _fetch_pricing_map(
+    db: Session, pairs: list[tuple[int, int]]
+) -> dict[tuple[int, int], Pricing]:
+    """Fetch all pricing rows for the given (instance_type_id, region_id) pairs
+    in a single query. Returns a dict keyed by (instance_type_id, region_id)."""
+    if not pairs:
+        return {}
+    unique_pairs = list(set(pairs))
+    rows = db.scalars(
         select(Pricing).where(
-            Pricing.instance_type_id == svc.instance_type_id,
-            Pricing.region_id == region_id,
+            tuple_(Pricing.instance_type_id, Pricing.region_id).in_(unique_pairs)
         )
-    ).first()
+    ).all()
+    return {(p.instance_type_id, p.region_id): p for p in rows}
 
+
+def _build_service_out(svc: AppService, pricing: Pricing | None) -> AppServiceOut:
     sc_name = None
     if (
         svc.instance_type
@@ -127,19 +136,16 @@ def _build_service_out(svc: AppService, region_id: int, db: Session) -> AppServi
 
 
 def _build_app_out(app_: Application, db: Session) -> ApplicationOut:
+    # Bulk-fetch all pricing for this app's services in a single query
+    pairs = [(svc.instance_type_id, app_.region_id) for svc in app_.services]
+    pricing_map = _fetch_pricing_map(db, pairs)
+
     services_out: list[AppServiceOut] = []
     monthly = 0.0
 
     for svc in app_.services:
-        svc_out = _build_service_out(svc, app_.region_id, db)
-        services_out.append(svc_out)
-
-        pricing = db.scalars(
-            select(Pricing).where(
-                Pricing.instance_type_id == svc.instance_type_id,
-                Pricing.region_id == app_.region_id,
-            )
-        ).first()
+        pricing = pricing_map.get((svc.instance_type_id, app_.region_id))
+        services_out.append(_build_service_out(svc, pricing))
         monthly += _service_monthly_cost(svc, pricing)
 
     return ApplicationOut(
@@ -215,18 +221,22 @@ def list_projects(db: Session = Depends(get_db)):
         .all()
     )
 
+    # Bulk-fetch all pricing for all services across all projects in one query
+    all_pairs = [
+        (svc.instance_type_id, app_.region_id)
+        for proj in projects
+        for app_ in proj.applications
+        for svc in app_.services
+    ]
+    pricing_map = _fetch_pricing_map(db, all_pairs)
+
     result: list[ProjectListOut] = []
     for proj in projects:
         total = 0.0
         providers = list(set(app_.provider for app_ in proj.applications))
         for app_ in proj.applications:
             for svc in app_.services:
-                pricing = db.scalars(
-                    select(Pricing).where(
-                        Pricing.instance_type_id == svc.instance_type_id,
-                        Pricing.region_id == app_.region_id,
-                    )
-                ).first()
+                pricing = pricing_map.get((svc.instance_type_id, app_.region_id))
                 total += _service_monthly_cost(svc, pricing)
         result.append(
             ProjectListOut(
@@ -404,9 +414,6 @@ def create_application_from_template(
                 continue
 
         node_count = spec.get("node_count")
-        # For compute services, node_count means number of instances (not a DB field)
-        # We create separate AppService records per node when node_count > 1 and
-        # the group is compute (not containers where node_count IS the param)
         repeat = 1
         if node_count and node_count > 1 and equivalent_group.startswith("compute"):
             repeat = node_count
@@ -544,7 +551,13 @@ def create_service(app_id: str, body: AppServiceCreate, db: Session = Depends(ge
     db.refresh(svc)
     svc.instance_type = it
 
-    return _build_service_out(svc, app_.region_id, db)
+    pricing = db.scalars(
+        select(Pricing).where(
+            Pricing.instance_type_id == svc.instance_type_id,
+            Pricing.region_id == app_.region_id,
+        )
+    ).first()
+    return _build_service_out(svc, pricing)
 
 
 @router.put("/services/{service_id}", response_model=AppServiceOut)
@@ -596,7 +609,13 @@ def update_service(
     db.refresh(svc)
 
     region_id = svc.application.region_id
-    return _build_service_out(svc, region_id, db)
+    pricing = db.scalars(
+        select(Pricing).where(
+            Pricing.instance_type_id == svc.instance_type_id,
+            Pricing.region_id == region_id,
+        )
+    ).first()
+    return _build_service_out(svc, pricing)
 
 
 @router.delete("/services/{service_id}", status_code=204)

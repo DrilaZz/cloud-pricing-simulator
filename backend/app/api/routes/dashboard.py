@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import AppService, Application, InstanceType, Pricing, Project
-from app.api.routes.projects import _service_monthly_cost, HOURS_PER_MONTH
+from app.api.routes.projects import _service_monthly_cost, _fetch_pricing_map, HOURS_PER_MONTH
 
 router = APIRouter(prefix="/api")
 
@@ -107,6 +107,15 @@ def get_dashboard(db: Session = Depends(get_db)):
         .all()
     )
 
+    # Bulk-fetch all pricing for every service in one query
+    all_pairs = [
+        (svc.instance_type_id, app.region_id)
+        for proj in projects
+        for app in proj.applications
+        for svc in app.services
+    ]
+    pricing_map = _fetch_pricing_map(db, all_pairs)
+
     total_od = 0.0
     total_eff = 0.0
     total_services = 0
@@ -114,7 +123,7 @@ def get_dashboard(db: Session = Depends(get_db)):
 
     by_provider: dict[str, float] = {}
     by_category: dict[str, float] = {}
-    app_entries: list[tuple[Application, str, float]] = []  # (app, project_name, eff_cost)
+    app_entries: list[tuple[Application, str, float]] = []
 
     proj_summaries = []
 
@@ -128,12 +137,7 @@ def get_dashboard(db: Session = Depends(get_db)):
             app_eff = 0.0
 
             for svc in app.services:
-                pricing = db.scalars(
-                    select(Pricing).where(
-                        Pricing.instance_type_id == svc.instance_type_id,
-                        Pricing.region_id == app.region_id,
-                    )
-                ).first()
+                pricing = pricing_map.get((svc.instance_type_id, app.region_id))
 
                 od = _ondemand_monthly(svc, pricing)
                 eff = _service_monthly_cost(svc, pricing)
@@ -150,11 +154,9 @@ def get_dashboard(db: Session = Depends(get_db)):
                     ri_services += 1
                     proj_ri += 1
 
-                # Aggregate by provider
                 prov = app.provider
                 by_provider[prov] = by_provider.get(prov, 0.0) + eff
 
-                # Aggregate by service category
                 cat = "other"
                 if svc.instance_type and svc.instance_type.service_category:
                     cat = svc.instance_type.service_category.name
@@ -178,7 +180,6 @@ def get_dashboard(db: Session = Depends(get_db)):
     global_ri = (ri_services / total_services * 100) if total_services > 0 else 0.0
     application_count = sum(len(p.applications) for p in projects)
 
-    # Top 5 most expensive apps
     top_5_sorted = sorted(app_entries, key=lambda x: x[2], reverse=True)[:5]
     top_5 = [
         TopApplication(
@@ -191,7 +192,6 @@ def get_dashboard(db: Session = Depends(get_db)):
         for app, proj_name, cost in top_5_sorted
     ]
 
-    # cost_by_provider
     cost_by_provider = [
         CostByProvider(
             provider_name=prov,
@@ -201,7 +201,6 @@ def get_dashboard(db: Session = Depends(get_db)):
         for prov, cost in sorted(by_provider.items(), key=lambda x: -x[1])
     ]
 
-    # cost_by_category
     cost_by_category = [
         CostByCategory(
             category_name=cat,

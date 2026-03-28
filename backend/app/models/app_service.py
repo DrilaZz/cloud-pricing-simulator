@@ -14,10 +14,10 @@ class AppService(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     application_id: Mapped[str] = mapped_column(
-        ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
     )
     instance_type_id: Mapped[int] = mapped_column(
-        ForeignKey("instance_types.id"), nullable=False
+        ForeignKey("instance_types.id"), nullable=False, index=True
     )
     utilization_rate: Mapped[float] = mapped_column(
         Numeric(5, 4), nullable=False, default=1.0

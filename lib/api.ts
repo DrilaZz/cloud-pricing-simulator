@@ -160,8 +160,6 @@ export class ApiError extends Error {
 
 async function apiFetch<T>(path: string): Promise<T> {
   const url = `${BASE_URL}${path}`
-  console.log('[API]', url)
-
   let res: Response
   try {
     res = await fetch(url)
@@ -176,7 +174,6 @@ async function apiFetch<T>(path: string): Promise<T> {
       detail = JSON.stringify(body.detail ?? body)
     } catch {}
     const msg = `API ${res.status}: ${detail || res.statusText}`
-    console.error('[API ERROR]', url, msg)
     throw new ApiError(msg, res.status)
   }
 
@@ -185,7 +182,6 @@ async function apiFetch<T>(path: string): Promise<T> {
 
 async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const url = `${BASE_URL}${path}`
-  console.log('[API POST]', url)
   let res: Response
   try {
     res = await fetch(url, {
@@ -226,7 +222,6 @@ async function apiPut<T>(path: string, body: unknown): Promise<T> {
 
 async function apiDelete(path: string): Promise<void> {
   const url = `${BASE_URL}${path}`
-  console.log('[API DELETE]', url)
   let res: Response
   try {
     res = await fetch(url, { method: 'DELETE' })

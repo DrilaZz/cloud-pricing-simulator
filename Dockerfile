@@ -23,11 +23,19 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Non-root user
+RUN addgroup --system --gid 1001 appgroup \
+    && adduser --system --uid 1001 appuser
+
 # Only the built artefacts + the minimal runtime deps
 COPY --from=deps    /app/node_modules  ./node_modules
 COPY --from=builder /app/.next         ./.next
 COPY --from=builder /app/public        ./public
 COPY package.json ./
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 3000
 

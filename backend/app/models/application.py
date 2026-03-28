@@ -14,12 +14,12 @@ class Application(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     project_id: Mapped[str] = mapped_column(
-        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     provider: Mapped[str] = mapped_column(String(20), nullable=False)  # aws/azure/gcp
     region_id: Mapped[int] = mapped_column(
-        ForeignKey("regions.id"), nullable=False
+        ForeignKey("regions.id"), nullable=False, index=True
     )
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(

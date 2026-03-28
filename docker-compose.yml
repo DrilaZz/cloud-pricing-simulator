@@ -28,6 +28,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cloud_pricing}:${POSTGRES_PASSWORD:-cloud_pricing}@db:5432/${POSTGRES_DB:-cloud_pricing}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
     mem_limit: 2g
     ports:
       - "${BACKEND_PORT:-8000}:8000"

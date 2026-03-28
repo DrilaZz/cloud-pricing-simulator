@@ -1,4 +1,6 @@
 import json
+import logging
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, Depends
@@ -9,14 +11,19 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import InstanceType, Pricing, Provider, Region, ServiceCategory
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api")
 
 _DATA_DIR = Path(__file__).parent.parent.parent / "data" / "pricing"
 _PROVIDER_FILES = ["aws_pricing.json", "azure_pricing.json", "gcp_pricing.json"]
 
 
+@lru_cache(maxsize=1)
 def _read_pricing_data_date() -> str | None:
-    """Return the most recent generated_at timestamp across all JSON files."""
+    """Return the most recent generated_at timestamp across all JSON files.
+    Cached for the process lifetime — the JSON files only change on redeploy.
+    """
     latest: str | None = None
     for fname in _PROVIDER_FILES:
         path = _DATA_DIR / fname
@@ -29,7 +36,7 @@ def _read_pricing_data_date() -> str | None:
             if ts and (latest is None or ts > latest):
                 latest = ts
         except Exception:
-            pass
+            logger.warning("Could not read pricing date from %s", path, exc_info=True)
     return latest
 
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { LabelProps } from 'recharts'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList,
 } from 'recharts'
@@ -178,12 +179,12 @@ function CategoryTooltip({ active, payload }: { active?: boolean; payload?: Tool
 
 // ─── Total label on top of each stacked bar ──────────────────────────────────
 
-function TotalLabel({ x, y, width, value }: { x?: number; y?: number; width?: number; value?: number }) {
-  if (!value) return null
+function TotalLabel({ x, y, width, value }: LabelProps) {
+  if (typeof value !== 'number' || !value) return null
   return (
     <text
-      x={(x ?? 0) + (width ?? 0) / 2}
-      y={(y ?? 0) - 5}
+      x={(x as number ?? 0) + (width as number ?? 0) / 2}
+      y={(y as number ?? 0) - 5}
       textAnchor="middle"
       fontSize={11}
       fontWeight={700}
@@ -420,7 +421,7 @@ export default function MultiCloudSimulation({ app }: Props) {
                             <LabelList
                               dataKey="_total"
                               position="top"
-                              content={TotalLabel as any}
+                              content={TotalLabel}
                             />
                           )}
                         </Bar>
