@@ -1,0 +1,35 @@
+# Dependencies (installed inside the image)
+node_modules/
+
+# Build artefacts
+.next/
+
+# Backend (not needed in the frontend image)
+backend/
+
+# Version control
+.git/
+.gitignore
+
+# Environment files (injected via docker-compose)
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tests / coverage
+coverage/
+.nyc_output/
+
+# Memory / docs
+memory/
+*.md

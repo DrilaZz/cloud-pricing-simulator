@@ -7,19 +7,37 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-indigo-500/30 bg-indigo-500/15 text-indigo-300',
-        secondary: 'border-slate-600 bg-slate-800 text-slate-300',
-        success: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400',
-        warning: 'border-amber-500/30 bg-amber-500/15 text-amber-400',
-        destructive: 'border-red-500/30 bg-red-500/15 text-red-400',
-        aws: 'border-orange-500/30 bg-orange-500/10 text-orange-400',
-        azure: 'border-sky-500/30 bg-sky-500/10 text-sky-400',
-        gcp: 'border-red-500/30 bg-red-500/10 text-red-400',
+        default:
+          'border-indigo-200 bg-indigo-50 text-indigo-700',
+        secondary:
+          'border-slate-200 bg-slate-100 text-slate-600',
+        success:
+          'border-emerald-200 bg-emerald-50 text-emerald-700',
+        warning:
+          'border-amber-200 bg-amber-50 text-amber-700',
+        destructive:
+          'border-red-200 bg-red-50 text-red-700',
+        // ── Cloud providers ──────────────────────────────────────────────
+        aws:
+          'border-[#FFD699] bg-[#FFF3E0] text-[#E65100]',
+        azure:
+          'border-[#90C8F0] bg-[#E6F1FB] text-[#0C447C]',
+        gcp:
+          'border-[#A8C8FA] bg-[#E8F0FE] text-[#042C53]',
+        // ── Service categories ───────────────────────────────────────────
+        compute:
+          'border-[#BBDAF5] bg-[#E6F1FB] text-[#0C447C]',
+        database:
+          'border-[#9DD9C3] bg-[#E1F5EE] text-[#085041]',
+        storage:
+          'border-[#E5C97A] bg-[#FAEEDA] text-[#633806]',
+        serverless:
+          'border-[#F0AECA] bg-[#FBEAF0] text-[#72243E]',
+        containers:
+          'border-[#C0BCEF] bg-[#EEEDFE] text-[#3C3489]',
       },
     },
-    defaultVariants: {
-      variant: 'default',
-    },
+    defaultVariants: { variant: 'default' },
   }
 )
 

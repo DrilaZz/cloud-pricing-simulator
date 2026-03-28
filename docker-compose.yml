@@ -1,0 +1,50 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-cloud_pricing}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloud_pricing}
+      POSTGRES_DB:       ${POSTGRES_DB:-cloud_pricing}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cloud_pricing} -d ${POSTGRES_DB:-cloud_pricing}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # ── FastAPI backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cloud_pricing}:${POSTGRES_PASSWORD:-cloud_pricing}@db:5432/${POSTGRES_DB:-cloud_pricing}
+    mem_limit: 2g
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  # ── Next.js frontend ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Baked at build time — must point to the host-exposed backend port
+        NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-8000}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  pgdata:

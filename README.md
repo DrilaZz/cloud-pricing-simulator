@@ -1,3 +1,38 @@
+# Cloud Pricing Simulator
+
+A FinOps tool for comparing cloud infrastructure costs across AWS, Azure, and GCP.
+
+## Updating Pricing Data
+
+Pricing data is stored as committed JSON files in `backend/app/data/pricing/`.
+Docker startup loads from these files — no network requests at startup.
+
+To refresh pricing data (run locally, not in Docker):
+
+```bash
+cd backend
+pip install httpx  # if not already installed
+python -m app.scripts.generate_pricing_json
+```
+
+This streams AWS CSVs, calls the Azure Retail Prices API, and loads GCP mock data.
+It writes three files:
+- `backend/app/data/pricing/aws_pricing.json`
+- `backend/app/data/pricing/azure_pricing.json`
+- `backend/app/data/pricing/gcp_pricing.json`
+
+Commit the updated files. The next Docker build will use them automatically.
+
+To refresh only one provider:
+
+```bash
+python -m app.scripts.generate_pricing_json aws
+python -m app.scripts.generate_pricing_json azure
+python -m app.scripts.generate_pricing_json gcp
+```
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
