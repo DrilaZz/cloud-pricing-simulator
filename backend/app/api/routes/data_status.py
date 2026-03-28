@@ -121,12 +121,15 @@ def get_data_status(db: Session = Depends(get_db)):
         total = sum(breakdown.values())
         last_up = stats["last_updated"]
 
-        if total > 50:
-            status = "complete"
-        elif total > 0:
-            status = "partial"
-        else:
+        # "complete" = all 5 expected categories present, "partial" = some, "empty" = none
+        expected_cats = {"compute", "database", "storage", "serverless", "containers"}
+        covered_cats = set(breakdown.keys())
+        if total == 0:
             status = "empty"
+        elif expected_cats <= covered_cats:
+            status = "complete"
+        else:
+            status = "partial"
 
         providers_status[provider.name][status] += 1
 

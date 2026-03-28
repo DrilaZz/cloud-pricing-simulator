@@ -162,11 +162,15 @@ if __name__ == "__main__":
             existing = db.scalar(select(func.count()).select_from(PricingModel))
         finally:
             db.close()
-        if existing and existing > 0:
+        # Only skip if we have at least 500 records (≈ one full provider loaded).
+        # A low count means a previous partial run — reload to ensure completeness.
+        if existing and existing >= 500:
             print(
                 f"Pricing data already exists ({existing} records), skipping load. "
                 "Use --force to reload."
             )
             sys.exit(0)
+        elif existing:
+            print(f"Only {existing} pricing records found (incomplete). Reloading…")
 
     run()
