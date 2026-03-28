@@ -4,9 +4,7 @@ An open-source tool to estimate, compare, and optimize cloud infrastructure cost
 
 Build your architecture, compare providers side by side, simulate Reserved Instance savings, and export professional cost estimates — all from a single dashboard.
 
-<!-- Uncomment and update paths once you add screenshots:
 ![Dashboard](docs/screenshots/dashboard.png)
--->
 
 ## Why this tool?
 
@@ -21,7 +19,11 @@ Cloud pricing is fragmented across three providers, hundreds of services, thousa
 
 **Multi-cloud cost simulation** — Compose an architecture with Compute, Database, Storage, Serverless, and Container services. Set utilization rates, volumes, request counts, and see costs update in real time.
 
+![Application view](docs/screenshots/application.png)
+
 **Provider comparison** — Same architecture, three providers. Stacked bar chart shows cost breakdown by service category across AWS, Azure, and GCP with automatic instance equivalence mapping.
+
+![Multi-cloud comparison](docs/screenshots/comparison.png)
 
 **Reserved Instance modeling** — Toggle RI (1-year or 3-year) on any service and instantly see the savings vs on-demand, with global RI coverage tracking.
 
@@ -32,6 +34,8 @@ Cloud pricing is fragmented across three providers, hundreds of services, thousa
 **Export** — Generate PDF cost estimates or CSV exports for further analysis and stakeholder presentations.
 
 **Data status monitoring** — Transparent view of pricing data coverage by provider and region, with freshness indicators.
+
+![Data status](docs/screenshots/data-status.png)
 
 **Dark/Light mode** — Full theme support.
 
